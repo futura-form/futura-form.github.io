@@ -36,7 +36,18 @@ CSS_ESCLUSI = {
     "font-awesome.min.css", "fa-v4-shims.css", "stellar-icon.css",  # icone -> SVG inline
     "magnific-popup.css", "featherlight.min.css",  # lightbox rimossa
 }
-JS_ESCLUSI = {"bundle-playback.js", "wombat.js", "ruffle.js", "athena.js", "core-it.js"}
+JS_ESCLUSI = {
+    "bundle-playback.js", "wombat.js", "ruffle.js", "athena.js", "core-it.js",  # Wayback
+    "69940543.js", "1717384.js", "iubenda_cs.js",                # consent manager
+    "core.min.js", "showon-es5.min.js", "showon.min.js",         # core Joomla non usato
+    "keepalive-es5.min.js", "keepalive.min.js",
+    "messages-es5.min.js", "messages.min.js",
+    "bootstrap-es5.min.js", "alert.min.js", "button.min.js",     # moduli singoli: c'e' il bundle
+    "carousel.min.js", "collapse.min.js", "dropdown.min.js",
+    "modal.min.js", "offcanvas.min.js", "popover.min.js",
+    "scrollspy.min.js", "tab.min.js", "toast.min.js",
+    "jquery.magnific-popup.min.js", "featherlight.min.js",       # lightbox rimossa
+}
 CSS_RINOMINATI = {"bootstrap(1).min.css": "bootstrap-2.min.css"}
 
 # I font icona non sono nei salvataggi e i CSS li cercano su archive.org.
@@ -125,8 +136,19 @@ def pulisci(html, mappa, slug, bundle=False):
 
     for s in soup.find_all("script"):
         src = s.get("src", "")
-        if "archive.org" in src or (not src and SCRIPT_WAYBACK.search(s.string or "")):
+        testo = s.string or ""
+        if "archive.org" in src or (not src and SCRIPT_WAYBACK.search(testo)):
             s.decompose()
+        elif not src and ("_iub" in testo or "Joomla." in testo):
+            s.decompose()
+
+    # Senza il suo script il pulsante delle preferenze cookie non fa nulla.
+    # Si itera su una copia e si salta chi e' gia' sparito insieme al padre.
+    for t in list(soup.find_all(class_=True)):
+        if t.attrs is None:
+            continue
+        if any("iubenda" in c for c in t.get("class") or []):
+            t.decompose()
 
     html_tag = soup.find("html")
     if html_tag:

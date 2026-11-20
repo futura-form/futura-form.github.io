@@ -122,6 +122,45 @@ class PulisciTest(unittest.TestCase):
         self.assertIn('aria-hidden="true"', out)
 
 
+class IubendaTest(unittest.TestCase):
+    def test_toglie_il_pulsante_preferenze_cookie_rimasto_orfano(self):
+        """Senza il suo script e' un comando che non fa nulla."""
+        out = pulisci(doc(body='<button class="iubenda-tp-btn iubenda-cs-preferences-link">'
+                               'Le tue preferenze</button><p>vero</p>'),
+                      mappa=MAPPA, slug="index")
+        self.assertNotIn("iubenda", out)
+        self.assertIn("vero", out)
+
+    def test_regge_i_pulsanti_iubenda_annidati(self):
+        """Decomporre il genitore lascia i figli nell'iterazione: senza
+        guardia la pulizia si schianta sulle pagine vere."""
+        out = pulisci(doc(body='<div class="iubenda-cs-container">'
+                               '<div class="iubenda-banner"><button class="iubenda-tp-btn">'
+                               'x</button></div></div><p>vero</p>'),
+                      mappa=MAPPA, slug="index")
+        self.assertNotIn("iubenda", out)
+        self.assertIn("vero", out)
+
+    def test_toglie_la_configurazione_inline_di_iubenda(self):
+        out = pulisci(doc(head='<script>var _iub = _iub || [];'
+                               '_iub.csConfiguration = {"siteId":1717384};</script>'),
+                      mappa=MAPPA, slug="index")
+        self.assertNotIn("_iub", out)
+
+
+class JoomlaTest(unittest.TestCase):
+    def test_toglie_lo_script_csrf_che_cerca_il_backend(self):
+        """Joomla non c'e' piu': quella chiamata lancia "Joomla is not
+        defined" a ogni caricamento e configura l'AJAX per un server
+        che non esiste."""
+        out = pulisci(doc(body="<script>;(function ($) { $.ajaxSetup({ headers: "
+                               "{ 'X-CSRF-Token': Joomla.getOptions('csrf.token') } }); "
+                               "})(jQuery);</script><p>vero</p>"),
+                      mappa=MAPPA, slug="index")
+        self.assertNotIn("Joomla", out)
+        self.assertIn("vero", out)
+
+
 class BundleTest(unittest.TestCase):
     """Con --bundle le pagine caricano un solo foglio comune piu' il
     proprio, e i blocchi <style> inline finiscono in quest'ultimo."""

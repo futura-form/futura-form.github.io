@@ -116,6 +116,21 @@ class ShootTest(unittest.TestCase):
             colors = {c for _, c in im.convert("RGB").getcolors(maxcolors=100000)}
         self.assertNotIn((255, 0, 0), colors, "la toolbar Wayback e' finita nello screenshot")
 
+    def test_suppressed_elements_go_even_with_inline_important(self):
+        """Il badge iubenda porta uno stile inline con !important che
+        batte il CSS di soppressione: va tolto dal DOM, non nascosto."""
+        page = self.page(
+            "<button class='iubenda-tp-btn iubenda-cs-preferences-link' "
+            "style='display:block !important;width:40px;height:40px;"
+            "background:#ff0000;position:absolute;top:10px;left:10px'></button>"
+            "<div style='height:300px'></div>"
+        )
+        out = self.tmp / "shot.png"
+        self.shoot(page, out, 400)
+        with Image.open(out) as im:
+            colors = {c for _, c in im.convert("RGB").getcolors(maxcolors=100000)}
+        self.assertNotIn((255, 0, 0), colors, "il badge iubenda e' finito nello screenshot")
+
     def test_fonts_option_actually_changes_the_rendering(self):
         """--fonts deve far arrivare davvero Poppins: senza, il testo cade
         sul sans di sistema e le due immagini non possono coincidere."""

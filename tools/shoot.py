@@ -58,6 +58,15 @@ def main(argv=None):
         if args.fonts:
             page.add_style_tag(url=FONTS)
         page.add_style_tag(content=SOPPRESSIONE)
+        # Il badge iubenda porta uno stile inline con !important che batte
+        # il foglio di soppressione: si toglie dal DOM.
+        page.evaluate("""() => {
+            document.querySelectorAll(
+                '#wm-ipp-base, #wm-ipp-print, #wm-ipp, .iubenda-cs-container, '
+                + '#iubenda-cs-banner, .iubenda-tp-btn, .iubenda-cs-overlay, '
+                + '[class*="iubenda-cs-"], [class*="iubenda-tp-"]'
+            ).forEach(e => e.remove());
+        }""")
         try:
             page.evaluate("document.fonts.ready")
         except Exception:
