@@ -161,6 +161,45 @@ class JoomlaTest(unittest.TestCase):
         self.assertIn("vero", out)
 
 
+class PortfolioTest(unittest.TestCase):
+    CARD = ('<div class="sp-simpleportfolio-overlay-wrapper clearfix">'
+            '<img class="sp-simpleportfolio-img" src="x.jpg"/>'
+            '<div class="sp-simpleportfolio-overlay"><div class="sp-vertical-middle"><div>'
+            '<h3 class="sp-simpleportfolio-title">'
+            '<a href="https://www.futuraform.it/it/component/spsimpleportfolio/item/9-x?Itemid=0">'
+            'Accademia del Profumo</a></h3>'
+            '<div class="sp-simpleportfolio-tags">Grafica</div></div>'
+            '<div class="sp-simpleportfolio-btns">'
+            '<a class="btn-zoom" data-featherlight="image" href="https://www.futuraform.it/'
+            'images/portfolio/x.jpg">Zoom</a></div></div></div></div>')
+
+    def pulito(self):
+        return pulisci(doc(body=self.CARD), mappa=MAPPA, slug="index")
+
+    def test_toglie_lancora_della_lightbox(self):
+        out = self.pulito()
+        self.assertNotIn("featherlight", out)
+        self.assertNotIn("btn-zoom", out)
+
+    def test_toglie_il_contenitore_del_pulsante_zoom(self):
+        self.assertNotIn("sp-simpleportfolio-btns", self.pulito())
+
+    def test_il_titolo_resta_ma_senza_link(self):
+        out = self.pulito()
+        self.assertIn("Accademia del Profumo", out)
+        self.assertIn("sp-simpleportfolio-title", out)
+        self.assertNotIn("spsimpleportfolio/item", out)
+
+    def test_loverlay_e_limmagine_restano_intatti(self):
+        out = self.pulito()
+        self.assertIn("sp-simpleportfolio-overlay", out)
+        self.assertIn("sp-simpleportfolio-img", out)
+        self.assertIn("sp-simpleportfolio-tags", out)
+
+    def test_nessuna_ancora_resta_nella_card(self):
+        self.assertNotIn("<a ", self.pulito().split("sp-simpleportfolio-overlay-wrapper")[1])
+
+
 class BundleTest(unittest.TestCase):
     """Con --bundle le pagine caricano un solo foglio comune piu' il
     proprio, e i blocchi <style> inline finiscono in quest'ultimo."""

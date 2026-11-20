@@ -201,6 +201,17 @@ def pulisci(html, mappa, slug, bundle=False):
                 t.replace_with(icona)
                 break
 
+    # Portfolio: via la lightbox, resta il solo effetto hover. Le immagini
+    # ad alta risoluzione non sono nei salvataggi e le schede di dettaglio
+    # non sono mai state salvate.
+    for btns in soup.select(".sp-simpleportfolio-btns"):
+        btns.decompose()
+    for a in soup.select("a[data-featherlight], a.btn-zoom"):
+        a.decompose()
+    for titolo in soup.select(".sp-simpleportfolio-title"):
+        for a in titolo.find_all("a"):
+            a.unwrap()
+
     for a in soup.find_all("a", href=True):
         a["href"] = _riscrivi_link(a["href"], slug)
     for f in soup.find_all("form", action=True):
