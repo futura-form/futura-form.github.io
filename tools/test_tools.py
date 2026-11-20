@@ -116,6 +116,26 @@ class ShootTest(unittest.TestCase):
             colors = {c for _, c in im.convert("RGB").getcolors(maxcolors=100000)}
         self.assertNotIn((255, 0, 0), colors, "la toolbar Wayback e' finita nello screenshot")
 
+    def test_fonts_option_actually_changes_the_rendering(self):
+        """--fonts deve far arrivare davvero Poppins: senza, il testo cade
+        sul sans di sistema e le due immagini non possono coincidere."""
+        page = self.page(
+            "<p style=\"font-family:'Poppins',sans-serif;font-size:40px\">"
+            "Metodo Visione Creativita</p>"
+        )
+        senza = self.tmp / "senza.png"
+        con = self.tmp / "con.png"
+        self.shoot(page, senza, 400)
+        subprocess.run(
+            [sys.executable, str(SHOOT), str(page), str(con), "--width", "400", "--fonts"],
+            capture_output=True, text=True,
+        )
+        with Image.open(senza) as a, Image.open(con) as b:
+            self.assertEqual(a.size, b.size)
+            self.assertNotEqual(list(a.convert("RGB").getdata()),
+                                list(b.convert("RGB").getdata()),
+                                "--fonts non ha cambiato nulla: Poppins non e' arrivato")
+
     def test_cookie_banner_is_suppressed(self):
         page = self.page(
             "<div id='iubenda-cs-banner' style='height:200px;background:#00ff00'></div>"

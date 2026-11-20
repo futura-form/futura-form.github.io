@@ -10,6 +10,10 @@ from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
+FONTS = ("https://fonts.googleapis.com/css2?family=Poppins:"
+         "ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;"
+         "1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap")
+
 SOPPRESSIONE = """
 #wm-ipp-base, #wm-ipp-print, #wm-ipp, .wb-autocomplete-suggestions,
 .iubenda-cs-container, #iubenda-cs-banner, .iubenda-tp-btn,
@@ -28,6 +32,10 @@ def main(argv=None):
     ap.add_argument("--wait", type=float, default=2.0,
                     help="attesa fissa dopo il caricamento, in secondi")
     ap.add_argument("--hover", help="selettore su cui portare il puntatore")
+    ap.add_argument("--fonts", action="store_true",
+                    help="inietta Poppins da Google Fonts: serve sugli originali "
+                         "archiviati, i cui @font-face puntano su archive.org e non "
+                         "risolvono, per confrontarli con la versione nuova")
     args = ap.parse_args(argv)
 
     url = Path(args.page).resolve().as_uri()
@@ -45,7 +53,13 @@ def main(argv=None):
             page.wait_for_load_state("networkidle", timeout=8000)
         except Exception:
             pass
+        if args.fonts:
+            page.add_style_tag(url=FONTS)
         page.add_style_tag(content=SOPPRESSIONE)
+        try:
+            page.evaluate("document.fonts.ready")
+        except Exception:
+            pass
         # Scorre fino in fondo e torna su, per far scattare gli effetti
         # legati allo scroll che altrimenti lascerebbero blocchi invisibili.
         page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
