@@ -1,0 +1,13 @@
+# macOS
+.DS_Store
+
+# Sorgente: i salvataggi Internet Archive da cui nasce il sito.
+# Restano in locale come riferimento, non vanno pubblicati.
+Sito-FuturaForm/
+
+# Python
+__pycache__/
+*.pyc
+
+# Workspace di esecuzione del piano
+.superpowers/
