@@ -1,0 +1,87 @@
+/* Card che sostituisce il form di contatto.
+   L'altezza e' quella che aveva il form (795px): la colonna che lo
+   conteneva detta l'altezza della sezione, e una card piu' bassa
+   alzerebbe il footer su tutte le pagine. Sotto i 576px la card cresce
+   quanto serve invece di traboccare. */
+
+.futuraform-card {
+  /* 795.3125px: e' l'altezza esatta che aveva il form, frazioni comprese.
+     Arrotondare a 795 sposta di un pixel tutto cio' che sta sotto. */
+  min-height: 795.3125px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 28px;
+  padding: 10px 0;
+  color: #fff;
+}
+
+.futuraform-card-occhiello {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  opacity: .65;
+}
+
+.futuraform-card-testo {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.45;
+  font-weight: 500;
+}
+
+.futuraform-card-recapiti,
+.futuraform-card-sedi {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.futuraform-card-recapiti li { margin-bottom: 18px; }
+
+.futuraform-card-recapiti span,
+.futuraform-card-sedi span {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: .55;
+  margin-bottom: 4px;
+}
+
+.futuraform-card-recapiti a {
+  font-size: 24px;
+  font-weight: 600;
+  color: #fff;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255, 255, 255, .35);
+  transition: border-color .25s;
+}
+
+.futuraform-card-recapiti a:hover,
+.futuraform-card-recapiti a:focus-visible { border-bottom-color: #fff; }
+
+.futuraform-card-sedi {
+  border-top: 1px solid rgba(255, 255, 255, .18);
+  padding-top: 24px;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.futuraform-card-sedi li + li { margin-top: 14px; }
+
+.futuraform-card-azione {
+  align-self: flex-start;
+  text-decoration: none;
+}
+
+@media (max-width: 575px) {
+  /* Su schermi stretti il contenuto si accorcia, quindi il min-height
+     resta: serve a tenere la sezione dell'altezza che aveva col form.
+     Se un giorno il testo crescesse oltre, la card si allunga da sola. */
+  .futuraform-card { gap: 22px; }
+  .futuraform-card-testo { font-size: 19px; }
+  .futuraform-card-recapiti a { font-size: 20px; word-break: break-word; }
+}

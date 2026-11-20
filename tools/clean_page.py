@@ -72,6 +72,29 @@ ICONE = {
     ),
 }
 
+# Il form puntava a un backend Joomla che non esiste piu'. Lo sostituisce
+# una card con un mailto, della stessa altezza del form perche' la colonna
+# che lo conteneva detta l'altezza della sezione.
+EMAIL = "info@futuraform.it"
+CARD_CONTATTI = """
+<div class="futuraform-card">
+  <p class="futuraform-card-occhiello">Parliamone</p>
+  <p class="futuraform-card-testo">Raccontaci cosa ti serve in due righe.
+     Ti risponde una persona, non un modulo.</p>
+  <ul class="futuraform-card-recapiti">
+    <li><span>E-mail</span><a href="mailto:info@futuraform.it">info@futuraform.it</a></li>
+    <li><span>Telefono</span><a href="tel:+390261868229">(+39) 02.61868229</a></li>
+  </ul>
+  <ul class="futuraform-card-sedi">
+    <li><span>Sede legale</span>Via Goldoni, 51 &ndash; 20129 Milano</li>
+    <li><span>Milano</span>Via Bisceglie 89/91 &ndash; 20152 Milano</li>
+    <li><span>Roma</span>Via di Casalotti 53 &ndash; 00166 Roma</li>
+  </ul>
+  <a class="rsform-submit-button btn btn-primary futuraform-card-azione"
+     href="mailto:info@futuraform.it">Scrivici una mail</a>
+</div>
+"""
+
 PREFISSO_WB = re.compile(r"https?://web\.archive\.org/web/\d+[a-z_]*/")
 # stessa cosa dentro il JSON inline di Joomla, dove gli slash sono escapati
 PREFISSO_WB_JSON = re.compile(r"https?:\\/\\/web\.archive\.org\\/web\\/\d+[a-z_]*\\/")
@@ -201,6 +224,12 @@ def pulisci(html, mappa, slug, bundle=False):
                 t.replace_with(icona)
                 break
 
+    # Il form di contatto e' in tutte e cinque le pagine, sopra il footer.
+    for form in soup.find_all("form", id="userForm"):
+        contenitore = form.find_parent(class_="rsform") or form.parent
+        contenitore.clear()
+        contenitore.append(BeautifulSoup(CARD_CONTATTI, "html.parser"))
+
     # Portfolio: via la lightbox, resta il solo effetto hover. Le immagini
     # ad alta risoluzione non sono nei salvataggi e le schede di dettaglio
     # non sono mai state salvate.
@@ -258,14 +287,17 @@ def _raccogli_stili(soup, slug):
 
     bundle = soup.new_tag("link", rel="stylesheet", href="assets/css/site.css")
     pagina = soup.new_tag("link", rel="stylesheet", href=f"assets/css/pages/{slug}.css")
+    card = soup.new_tag("link", rel="stylesheet", href="assets/css/card-contatti.css")
     if links:
         links[0].insert_before(bundle)
         bundle.insert_after(pagina)
+        pagina.insert_after(card)
         for l in links:
             l.decompose()
     else:
         soup.find("head").append(bundle)
         bundle.insert_after(pagina)
+        pagina.insert_after(card)
     return "\n".join(b.strip() for b in blocchi if b.strip()) + "\n"
 
 

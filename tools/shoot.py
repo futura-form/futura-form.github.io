@@ -49,6 +49,13 @@ def main(argv=None):
         errori = []
         page.on("pageerror", lambda e: errori.append(str(e)))
 
+        if not args.no_freeze:
+            # Il carosello non solo trasla: ruota i nodi nel DOM a ogni
+            # scatto, quindi azzerare il transform non basta a renderlo
+            # confrontabile. Si impedisce all'autoplay di partire, prima
+            # che gli script della pagina vengano eseguiti.
+            page.add_init_script(
+                "window.setInterval = function () { return 0; };")
         page.goto(url, wait_until="load")
         # networkidle non arriva sempre: gli script Wayback restano appesi.
         try:

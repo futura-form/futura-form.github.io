@@ -200,6 +200,47 @@ class PortfolioTest(unittest.TestCase):
         self.assertNotIn("<a ", self.pulito().split("sp-simpleportfolio-overlay-wrapper")[1])
 
 
+class CardContattiTest(unittest.TestCase):
+    FORM = ('<div class="sppb-addon-content"><div class="rsform">'
+            '<form id="userForm" method="post" action="/it/contatti">'
+            '<input name="Nome"><input name="Cognome">'
+            '<button type="submit" class="rsform-submit-button btn btn-primary">'
+            'Invia la tua richiesta</button></form></div></div>')
+
+    def pulito(self):
+        return pulisci(doc(body=self.FORM), mappa=MAPPA, slug="contatti")
+
+    def test_il_form_sparisce(self):
+        out = self.pulito()
+        self.assertNotIn("userForm", out)
+        self.assertNotIn("<form", out)
+        self.assertNotIn("<input", out)
+
+    def test_il_contenitore_rsform_resta_per_non_perdere_la_cornice(self):
+        """Il bordo sfumato sta su un wrapper piu' esterno: va toccato
+        solo il contenuto, non la scatola."""
+        out = self.pulito()
+        self.assertIn('class="rsform"', out)
+        self.assertIn("sppb-addon-content", out)
+
+    def test_ce_un_link_mailto_allindirizzo_giusto(self):
+        self.assertIn('href="mailto:info@futuraform.it"', self.pulito())
+
+    def test_il_pulsante_riusa_le_classi_delloriginale(self):
+        out = self.pulito()
+        self.assertIn("rsform-submit-button", out)
+        self.assertIn("btn-primary", out)
+
+    def test_la_card_porta_i_recapiti(self):
+        out = self.pulito()
+        for atteso in ("info@futuraform.it", "02.61868229", "Via Bisceglie 89/91",
+                       "Via di Casalotti 53"):
+            self.assertIn(atteso, out, f"manca {atteso}")
+
+    def test_la_card_ha_la_classe_che_ne_fissa_laltezza(self):
+        self.assertIn("futuraform-card", self.pulito())
+
+
 class BundleTest(unittest.TestCase):
     """Con --bundle le pagine caricano un solo foglio comune piu' il
     proprio, e i blocchi <style> inline finiscono in quest'ultimo."""
