@@ -102,5 +102,55 @@ class PulisciTest(unittest.TestCase):
         self.assertNotIn("archive.org", out)
 
 
+    def test_licona_hamburger_diventa_svg_inline(self):
+        """I font icona non sono nei salvataggi: i due glifi usati
+        diventano SVG, che non dipendono da nessun file esterno."""
+        out = self.pulito(body='<a id="offcanvas-toggler">'
+                               '<i class="fa fa-bars" aria-hidden="true" title="Navigation"></i></a>')
+        self.assertNotIn("fa-bars", out)
+        self.assertIn("<svg", out)
+        self.assertIn("currentColor", out)
+
+    def test_licona_di_chiusura_diventa_svg_inline(self):
+        out = self.pulito(body='<a class="close-offcanvas" href="#">'
+                               '<span class="fa fa-remove"></span></a>')
+        self.assertNotIn("fa-remove", out)
+        self.assertIn("<svg", out)
+
+    def test_le_icone_svg_restano_invisibili_agli_screen_reader(self):
+        out = self.pulito(body='<i class="fa fa-bars" aria-hidden="true"></i>')
+        self.assertIn('aria-hidden="true"', out)
+
+
+class BundleTest(unittest.TestCase):
+    """Con --bundle le pagine caricano un solo foglio comune piu' il
+    proprio, e i blocchi <style> inline finiscono in quest'ultimo."""
+
+    def pulito(self, head="", body=""):
+        return pulisci(doc(head=head, body=body), mappa=MAPPA, slug="index", bundle=True)
+
+    def test_un_solo_link_al_bundle_comune(self):
+        out, _ = self.pulito(head='<link href="assets/css/bootstrap.min.css" rel="stylesheet">'
+                                  '<link href="assets/css/custom.css" rel="stylesheet">')
+        self.assertEqual(out.count("assets/css/site.css"), 1)
+        self.assertNotIn("bootstrap.min.css", out)
+        self.assertNotIn("custom.css", out)
+
+    def test_il_css_di_pagina_viene_caricato_dopo_il_bundle(self):
+        out, _ = self.pulito(head='<link href="assets/css/custom.css" rel="stylesheet">')
+        self.assertLess(out.index("assets/css/site.css"), out.index("assets/css/pages/index.css"))
+
+    def test_i_blocchi_style_finiscono_nel_css_di_pagina_in_ordine(self):
+        out, css = self.pulito(
+            head='<link href="assets/css/custom.css" rel="stylesheet"><style>h1{color:red}</style>',
+            body='<style>h2{color:blue}</style><p>x</p>')
+        self.assertNotIn("<style", out)
+        self.assertLess(css.index("h1{color:red}"), css.index("h2{color:blue}"))
+
+    def test_senza_bundle_restituisce_solo_il_testo(self):
+        out = pulisci(doc(), mappa=MAPPA, slug="index")
+        self.assertIsInstance(out, str)
+
+
 if __name__ == "__main__":
     unittest.main()

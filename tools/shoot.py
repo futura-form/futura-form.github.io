@@ -32,6 +32,8 @@ def main(argv=None):
     ap.add_argument("--wait", type=float, default=2.0,
                     help="attesa fissa dopo il caricamento, in secondi")
     ap.add_argument("--hover", help="selettore su cui portare il puntatore")
+    ap.add_argument("--no-freeze", action="store_true",
+                    help="non fermare i timer: lascia correre animazioni e caroselli")
     ap.add_argument("--fonts", action="store_true",
                     help="inietta Poppins da Google Fonts: serve sugli originali "
                          "archiviati, i cui @font-face puntano su archive.org e non "
@@ -66,6 +68,23 @@ def main(argv=None):
         page.wait_for_timeout(int(args.wait * 1000))
         page.evaluate("window.scrollTo(0, 0)")
         page.wait_for_timeout(500)
+
+        if not args.no_freeze:
+            # Il carosello dei loghi riceve da JS un transform inline che
+            # avanza nel tempo: due catture della stessa pagina non
+            # coincidono. Si fermano i timer e si riporta ogni carosello
+            # a zero, allo stesso modo sull'originale e sulla copia.
+            page.evaluate("""() => {
+                const alto = setTimeout(() => {}, 0);
+                for (let i = 0; i <= alto; i++) { clearTimeout(i); clearInterval(i); }
+                document.querySelectorAll(
+                    '.sppb-carousel-extended-outer-stage, [class*="carousel"][style*="translate3d"]'
+                ).forEach(e => {
+                    e.style.transitionDuration = '0s';
+                    e.style.transform = 'translate3d(0px, 0px, 0px)';
+                });
+            }""")
+            page.wait_for_timeout(300)
 
         if args.hover:
             page.hover(args.hover)

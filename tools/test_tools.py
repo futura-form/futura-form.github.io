@@ -136,6 +136,24 @@ class ShootTest(unittest.TestCase):
                                 list(b.convert("RGB").getdata()),
                                 "--fonts non ha cambiato nulla: Poppins non e' arrivato")
 
+    def test_two_runs_of_a_moving_page_give_the_same_image(self):
+        """Il carosello dei loghi avanza da solo: senza congelarlo, due
+        catture della stessa pagina differiscono e ogni confronto mente."""
+        page = self.page(
+            "<div id='stage' style='height:120px;background:#eee'>"
+            "<div style='width:60px;height:60px;background:#000'></div></div>"
+            "<script>let x=0;setInterval(()=>{x=(x+37)%300;"
+            "document.getElementById('stage').style.transform="
+            "'translate3d('+x+'px,0px,0px)';},30);</script>"
+        )
+        a, b = self.tmp / "a.png", self.tmp / "b.png"
+        self.shoot(page, a, 400)
+        self.shoot(page, b, 400)
+        with Image.open(a) as ia, Image.open(b) as ib:
+            self.assertEqual(list(ia.convert("RGB").getdata()),
+                             list(ib.convert("RGB").getdata()),
+                             "due catture della stessa pagina sono diverse")
+
     def test_cookie_banner_is_suppressed(self):
         page = self.page(
             "<div id='iubenda-cs-banner' style='height:200px;background:#00ff00'></div>"

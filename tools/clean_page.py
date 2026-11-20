@@ -29,9 +29,37 @@ PAGINE = {
 }
 
 # file che non passano nel sito nuovo
-CSS_ESCLUSI = {"banner-styles.css", "iconochive.css", "css", "css(1)"}
+CSS_ESCLUSI = {
+    "banner-styles.css", "iconochive.css",   # toolbar Wayback
+    "css", "css(1)",                          # font con URL su archive.org
+    "joomla-alert.min.css", "system-j4.min.css",  # interfaccia Joomla, verificato inutilizzata
+    "font-awesome.min.css", "fa-v4-shims.css", "stellar-icon.css",  # icone -> SVG inline
+    "magnific-popup.css", "featherlight.min.css",  # lightbox rimossa
+}
 JS_ESCLUSI = {"bundle-playback.js", "wombat.js", "ruffle.js", "athena.js", "core-it.js"}
 CSS_RINOMINATI = {"bootstrap(1).min.css": "bootstrap-2.min.css"}
+
+# I font icona non sono nei salvataggi e i CSS li cercano su archive.org.
+# Nel markup si usano solo questi due glifi: diventano SVG inline, misurati
+# in em cosi' da ereditare dimensione e colore come faceva il font.
+STILE_ICONA = "width:1em;height:1em;vertical-align:-.125em;fill:currentColor"
+ICONE = {
+    "fa-bars": (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" '
+        f'style="{STILE_ICONA}"><path d="M16 132h416c8.8 0 16-7.2 16-16V76c0-8.8-7.2-16-16-16H16'
+        'C7.2 60 0 67.2 0 76v40c0 8.8 7.2 16 16 16zm0 160h416c8.8 0 16-7.2 16-16v-40c0-8.8-7.2-16'
+        '-16-16H16c-8.8 0-16 7.2-16 16v40c0 8.8 7.2 16 16 16zm0 160h416c8.8 0 16-7.2 16-16v-40c0'
+        '-8.8-7.2-16-16-16H16c-8.8 0-16 7.2-16 16v40c0 8.8 7.2 16 16 16z"/></svg>'
+    ),
+    "fa-remove": (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 352 512" '
+        f'style="{STILE_ICONA}"><path d="M242.7 256l100.1-100.1c12.3-12.3 12.3-32.2 0-44.5l-22.2'
+        '-22.2c-12.3-12.3-32.2-12.3-44.5 0L176 189.3 75.9 89.2c-12.3-12.3-32.2-12.3-44.5 0L9.2 '
+        '111.5c-12.3 12.3-12.3 32.2 0 44.5L109.3 256 9.2 356.1c-12.3 12.3-12.3 32.2 0 44.5l22.2 '
+        '22.2c12.3 12.3 32.2 12.3 44.5 0L176 322.7l100.1 100.1c12.3 12.3 32.2 12.3 44.5 0l22.2'
+        '-22.2c12.3-12.3 12.3-32.2 0-44.5L242.7 256z"/></svg>'
+    ),
+}
 
 PREFISSO_WB = re.compile(r"https?://web\.archive\.org/web/\d+[a-z_]*/")
 # stessa cosa dentro il JSON inline di Joomla, dove gli slash sono escapati
@@ -84,7 +112,7 @@ def _riscrivi_link(href, slug):
     return destinazione
 
 
-def pulisci(html, mappa, slug):
+def pulisci(html, mappa, slug, bundle=False):
     html = BLOCCO_TOOLBAR.sub("", html)
     soup = BeautifulSoup(html, "html.parser")
 
@@ -138,6 +166,19 @@ def pulisci(html, mappa, slug):
                         parti.append(f"{n} {desc}".strip())
                 t["srcset"] = ", ".join(parti)
 
+    for t in soup.find_all(["i", "span"], class_=True):
+        classi = t.get("class")
+        for nome, svg in ICONE.items():
+            if nome in classi:
+                icona = BeautifulSoup(svg, "html.parser")
+                for attr in ("aria-hidden", "title", "aria-label"):
+                    if t.get(attr):
+                        icona.svg[attr] = t[attr]
+                if not icona.svg.get("aria-hidden"):
+                    icona.svg["aria-hidden"] = "true"
+                t.replace_with(icona)
+                break
+
     for a in soup.find_all("a", href=True):
         a["href"] = _riscrivi_link(a["href"], slug)
     for f in soup.find_all("form", action=True):
@@ -161,10 +202,38 @@ def pulisci(html, mappa, slug):
             head.append(icona)
             head.append(font)
 
+    css_pagina = None
+    if bundle:
+        css_pagina = _raccogli_stili(soup, slug)
+
     out = str(soup)
     out = PREFISSO_WB.sub("", out)
     out = PREFISSO_WB_JSON.sub("", out)
-    return out
+    return (out, css_pagina) if bundle else out
+
+
+def _raccogli_stili(soup, slug):
+    """Sostituisce i <link> dei singoli fogli con il bundle, e sposta i
+    blocchi <style> — testa e corpo, in ordine di documento — nel CSS
+    della pagina, caricato subito dopo."""
+    links = [l for l in soup.find_all("link", href=True)
+             if l["href"].startswith("assets/css/")]
+    blocchi = []
+    for st in soup.find_all("style"):
+        blocchi.append(st.decode_contents())
+        st.decompose()
+
+    bundle = soup.new_tag("link", rel="stylesheet", href="assets/css/site.css")
+    pagina = soup.new_tag("link", rel="stylesheet", href=f"assets/css/pages/{slug}.css")
+    if links:
+        links[0].insert_before(bundle)
+        bundle.insert_after(pagina)
+        for l in links:
+            l.decompose()
+    else:
+        soup.find("head").append(bundle)
+        bundle.insert_after(pagina)
+    return "\n".join(b.strip() for b in blocchi if b.strip()) + "\n"
 
 
 def main(argv=None):
@@ -173,12 +242,23 @@ def main(argv=None):
     ap.add_argument("destinazione")
     ap.add_argument("--slug", required=True)
     ap.add_argument("--mappa", default="tools/asset-map.json")
+    ap.add_argument("--bundle", action="store_true",
+                    help="un solo site.css piu' il CSS della pagina")
     args = ap.parse_args(argv)
 
     mappa = json.loads(Path(args.mappa).read_text(encoding="utf-8"))
     html = Path(args.sorgente).read_text(encoding="utf-8", errors="replace")
-    Path(args.destinazione).write_text(pulisci(html, mappa, args.slug), encoding="utf-8")
-    print(f"scritto {args.destinazione}")
+    risultato = pulisci(html, mappa, args.slug, bundle=args.bundle)
+    if args.bundle:
+        testo, css = risultato
+        css_path = Path(f"assets/css/pages/{args.slug}.css")
+        css_path.parent.mkdir(parents=True, exist_ok=True)
+        css_path.write_text(css, encoding="utf-8")
+        print(f"scritto {args.destinazione} e {css_path}")
+    else:
+        testo = risultato
+        print(f"scritto {args.destinazione}")
+    Path(args.destinazione).write_text(testo, encoding="utf-8")
     return 0
 
 
