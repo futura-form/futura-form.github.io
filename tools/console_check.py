@@ -14,7 +14,8 @@ def controlla(path, width=1440):
         pg.on("console", lambda m: console.append(m.text) if m.type == "error" else None)
         pg.on("requestfailed", lambda r: falliti.append((r.url, r.failure)))
         pg.on("response", lambda r: falliti.append((r.url, f"HTTP {r.status}")) if r.status >= 400 else None)
-        pg.goto(Path(path).resolve().as_uri(), wait_until="load")
+        url = path if path.startswith("http") else Path(path).resolve().as_uri()
+        pg.goto(url, wait_until="load")
         try: pg.wait_for_load_state("networkidle", timeout=8000)
         except Exception: pass
         pg.wait_for_timeout(2500)
