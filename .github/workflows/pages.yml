@@ -1,0 +1,47 @@
+# Pubblica su GitHub Pages il contenuto di build/, che e' gia' il sito
+# pronto: qui non si costruisce nulla, si carica soltanto. La
+# ricostruzione dai salvataggi Internet Archive avviene in locale con
+# tools/build.py, perche' i salvataggi non stanno nel repository.
+name: Pubblica su Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'build/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Una pubblicazione alla volta; non annulla quella in corso.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  pubblica:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Controlla che build/ contenga il sito
+        run: |
+          test -f build/index.html || { echo "manca build/index.html"; exit 1; }
+          test -f build/.nojekyll  || { echo "manca build/.nojekyll"; exit 1; }
+          echo "$(find build -type f | wc -l) file da pubblicare"
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build
+
+      - id: deploy
+        uses: actions/deploy-pages@v4

@@ -7,7 +7,8 @@ import re
 import unittest
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+PROGETTO = Path(__file__).resolve().parent.parent
+ROOT = PROGETTO / "build"          # il sito pubblicato
 ASSETS = ROOT / "assets"
 
 

@@ -16,6 +16,7 @@ from pathlib import Path
 from PIL import Image, ImageChops
 
 ROOT = Path(__file__).resolve().parent.parent
+SITO = ROOT / "build"
 
 # I riquadri sono (x0, y0, x1, y1, motivo) in coordinate della baseline,
 # con un margine attorno alla misura. Sono rettangoli e non semplici fasce
@@ -135,7 +136,7 @@ def main(argv=None):
             shot = Path(tmp) / f"{slug}.png"
             subprocess.run(
                 [sys.executable, str(ROOT / "tools/shoot.py"),
-                 str(ROOT / f"{slug}.html"), str(shot), "--width", "1440"],
+                 str(SITO / f"{slug}.html"), str(shot), "--width", "1440"],
                 check=True, capture_output=True)
             try:
                 fuori = differenze_fuori_dai_riquadri(

@@ -5,6 +5,27 @@ dominio `futuraform.it` risponde con un certificato non valido. Il sito
 nasce da cinque pagine italiane salvate dall'Internet Archive e si serve
 senza alcun passo di build — si clona e si pubblica.
 
+## La cartella da pubblicare
+
+`build/` contiene esattamente il sito e nient'altro: cinque pagine, gli
+asset, e un `.nojekyll`. È quella che va online, ed è versionata perché
+i salvataggi da cui nasce non stanno nel repository. Tutto il resto —
+`tools/`, `baseline/`, `docs/` — serve a produrla e verificarla, e non
+viene pubblicato.
+
+```
+build/
+├─ index.html
+├─ chi-siamo.html · servizi.html · lavori.html · contatti.html
+├─ .nojekyll
+└─ assets/
+   ├─ css/site.css              i dieci fogli del tema concatenati
+   ├─ css/pages/<pagina>.css    i blocchi <style> estratti, uno per pagina
+   ├─ css/card-contatti.css     la card che sostituisce il form
+   ├─ js/                       i nove script rimasti su trentaquattro
+   └─ img/                      le immagini, deduplicate
+```
+
 ## Le pagine
 
 | File | Pagina |
@@ -40,7 +61,7 @@ lo verifica a ogni esecuzione della suite.
 ## Servire in locale
 
 ```bash
-python3 -m http.server
+cd build && python3 -m http.server
 ```
 
 Poi `http://localhost:8000/`. Serve un server HTTP vero: aprendo i file
@@ -49,9 +70,15 @@ mobile non si apre.
 
 ## Pubblicare su GitHub Pages
 
-Impostazioni del repository → Pages → Source: *Deploy from a branch*,
-branch `main`, cartella `/ (root)`. Il file `.nojekyll` impedisce a
-Jekyll di ignorare le cartelle che iniziano con l'underscore.
+Impostazioni del repository → Pages → Source: **GitHub Actions**. Da lì
+in poi ogni push su `main` che tocchi `build/` pubblica il sito, tramite
+`.github/workflows/pages.yml`. Il workflow non costruisce niente: carica
+`build/` così com'è, dopo aver controllato che contenga `index.html` e
+`.nojekyll`.
+
+Serve una Action perché Pages, nella modalità "deploy da un branch", sa
+servire solo la radice del repository o `docs/`, non una cartella
+arbitraria come `build/`.
 
 Tutti i percorsi sono relativi, quindi il sito funziona anche servito da
 una sottocartella come `https://utente.github.io/futuraform/`.
@@ -61,15 +88,6 @@ L'unica richiesta verso l'esterno è il foglio dei font su
 sistema. Tutto il resto sta nel repository.
 
 ## Com'è fatto
-
-```
-index.html, chi-siamo.html, …   le cinque pagine
-assets/css/site.css             i dieci fogli del tema concatenati
-assets/css/pages/<pagina>.css   i blocchi <style> estratti, uno per pagina
-assets/css/card-contatti.css    la card che sostituisce il form
-assets/js/                      i nove script rimasti su trentaquattro
-assets/img/                     le immagini, deduplicate
-```
 
 Il markup è quello generato da Joomla 4 con Helix Ultimate e SP Page
 Builder, ripulito: niente più iniezione Wayback, un bundle CSS al posto
@@ -88,9 +106,12 @@ python3 -m unittest discover -s tools -p 'test_*.py' # la suite completa
 python3 tools/verify.py                             # solo il confronto a pixel
 ```
 
-`build.py` rifà tutto: copia e rinomina le immagini, concatena il bundle
-CSS, rigenera le cinque pagine e i CSS di pagina. Eseguirlo due volte di
-fila non cambia un byte.
+`build.py` rifà tutto da zero dentro `build/`: copia e rinomina le
+immagini, copia gli script che servono, concatena il bundle CSS, rigenera
+le cinque pagine e i loro CSS. Eseguirlo due volte di fila non cambia un
+byte. Gli unici file scritti a mano sono in `tools/`:
+`tools/card-contatti.css` è il CSS della card, e viene copiato dentro
+`build/` dalla ricostruzione.
 
 La suite controlla la trasformazione, le proprietà che il sito deve
 mantenere (percorsi relativi, riferimenti agli asset che combaciano
@@ -108,7 +129,7 @@ Per confrontare una singola pagina a mano:
 
 ```bash
 python3 tools/shoot.py "Sito-FuturaForm/Home-Page.html" riferimento.png --width 1440 --fonts
-python3 tools/shoot.py index.html nuova.png --width 1440
+python3 tools/shoot.py build/index.html nuova.png --width 1440
 python3 tools/compare.py riferimento.png nuova.png
 ```
 

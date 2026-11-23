@@ -1,0 +1,117 @@
+/* Card che sostituisce il form di contatto.
+
+   Due vincoli:
+   - l'altezza e' quella esatta che aveva il form (795.3125px, frazioni
+     comprese): la colonna che lo conteneva detta l'altezza della
+     sezione, e arrotondare sposta di un pixel tutto cio' che sta sotto;
+   - i selettori partono da .rsform, il contenitore che resta: le regole
+     del tema hanno specificita' alta e una classe sola non basta. Dove
+     il tema usa selettori con ID (#sp-bottom a e simili) nessuna
+     combinazione di classi puo' vincere, e li' serve !important: e'
+     segnalato caso per caso. */
+
+.rsform .futuraform-card {
+  min-height: 795.3125px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 26px;
+  padding: 10px 0;
+  color: #fff;
+}
+
+.rsform .futuraform-card-occhiello {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  opacity: .6;
+  line-height: 1;
+}
+
+.rsform .futuraform-card-testo {
+  margin: 0;
+  font-size: 21px;
+  line-height: 1.45;
+  font-weight: 500;
+}
+
+.rsform .futuraform-card-recapiti,
+.rsform .futuraform-card-sedi {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rsform .futuraform-card-recapiti li { margin: 0 0 16px; }
+.rsform .futuraform-card-recapiti li:last-child { margin-bottom: 0; }
+
+.rsform .futuraform-card-recapiti span,
+.rsform .futuraform-card-sedi span {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: .5;
+  margin-bottom: 5px;
+  line-height: 1;
+}
+
+.rsform .futuraform-card-recapiti a {
+  display: inline-block;
+  font-size: 24px !important;   /* batte #sp-bottom a */
+  font-weight: 600;
+  line-height: 1.2;
+  color: #fff !important;       /* batte #sp-bottom a */
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255, 255, 255, .3);
+  transition: border-color .25s;
+}
+
+.rsform .futuraform-card-recapiti a:hover,
+.rsform .futuraform-card-recapiti a:focus-visible {
+  border-bottom-color: #fff;
+}
+
+.rsform .futuraform-card-sedi {
+  border-top: 1px solid rgba(255, 255, 255, .18);
+  padding-top: 22px;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.rsform .futuraform-card-sedi li + li { margin-top: 12px; }
+
+/* stesso aspetto del pulsante di invio che c'era qui:
+   rettangolo bianco pieno, testo nero, nessun raggio */
+.rsform .futuraform-card-azione {
+  align-self: flex-start;
+  padding: 5px 15px;
+  border: 2px solid #fff;
+  border-radius: 0;
+  background: #fff;
+  color: #000 !important;       /* batte #sp-bottom a */
+  font-size: 24px !important;
+  font-weight: 700;
+  line-height: 1.5;
+  text-decoration: none;
+  transition: background-color .25s, color .25s;
+}
+
+.rsform .futuraform-card-azione:hover,
+.rsform .futuraform-card-azione:focus-visible {
+  background: transparent;
+  color: #fff !important;
+}
+
+@media (max-width: 575px) {
+  /* Il contenuto si accorcia, quindi il min-height resta: serve a tenere
+     la sezione dell'altezza che aveva col form. Se un giorno il testo
+     crescesse oltre, la card si allunga da sola. */
+  .rsform .futuraform-card { gap: 20px; }
+  .rsform .futuraform-card-testo { font-size: 18px; }
+  .rsform .futuraform-card-recapiti a { font-size: 20px !important; word-break: break-word; }
+  .rsform .futuraform-card-azione { font-size: 19px !important; }
+}

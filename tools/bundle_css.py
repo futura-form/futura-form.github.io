@@ -42,6 +42,7 @@ def main(argv=None):
     ap.add_argument("nomi", nargs="+")
     args = ap.parse_args(argv)
     testo = concatena(args.cartella, args.nomi)
+    Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     Path(args.out).write_text(testo, encoding="utf-8")
     print(f"scritto {args.out}: {len(args.nomi)} fogli, {len(testo)//1024} KB")
     return 0

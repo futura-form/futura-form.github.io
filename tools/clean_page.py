@@ -361,7 +361,9 @@ def main(argv=None):
     risultato = pulisci(html, mappa, args.slug, bundle=args.bundle)
     if args.bundle:
         testo, css = risultato
-        css_path = Path(f"assets/css/pages/{args.slug}.css")
+        # accanto all'HTML di destinazione, non rispetto alla cartella
+        # da cui si lancia il comando: e' l'HTML che lo carica
+        css_path = Path(args.destinazione).parent / f"assets/css/pages/{args.slug}.css"
         css_path.parent.mkdir(parents=True, exist_ok=True)
         css_path.write_text(css, encoding="utf-8")
         print(f"scritto {args.destinazione} e {css_path}")

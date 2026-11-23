@@ -63,7 +63,7 @@ def sincronizza(sorgente, destinazione):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--sorgente", default=str(ROOT / "Sito-FuturaForm"))
-    ap.add_argument("--destinazione", default=str(ROOT / "assets/img"))
+    ap.add_argument("--destinazione", default=str(ROOT / "build/assets/img"))
     ap.add_argument("--mappa", default=str(ROOT / "tools/asset-map.json"))
     ap.add_argument("--favicon", default="Logo-quadrato.png",
                     help="file nella radice dei salvataggi da usare come favicon")

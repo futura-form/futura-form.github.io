@@ -8,7 +8,8 @@ se anche un solo pixel si muove.
 import argparse, re, subprocess, sys, tempfile
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+PROGETTO = Path(__file__).resolve().parent.parent
+ROOT = PROGETTO / "build"
 PAGINE = ["index", "chi-siamo", "servizi", "lavori", "contatti"]
 
 
@@ -36,11 +37,11 @@ def confronta(tmp):
     esiti = {}
     for p in PAGINE:
         shot = Path(tmp) / f"{p}.png"
-        subprocess.run([sys.executable, str(ROOT / "tools/shoot.py"),
+        subprocess.run([sys.executable, str(PROGETTO / "tools/shoot.py"),
                         str(ROOT / f"{p}.html"), str(shot), "--width", "1440"],
                        capture_output=True, check=True)
-        r = subprocess.run([sys.executable, str(ROOT / "tools/compare.py"),
-                            str(ROOT / f"baseline/orig-{p}-1440.png"), str(shot)],
+        r = subprocess.run([sys.executable, str(PROGETTO / "tools/compare.py"),
+                            str(PROGETTO / f"baseline/orig-{p}-1440.png"), str(shot)],
                            capture_output=True, text=True)
         esiti[p] = (r.returncode, r.stdout.strip().splitlines()[0] if r.stdout else "")
     return esiti

@@ -393,5 +393,42 @@ class BundleTest(unittest.TestCase):
         self.assertIsInstance(out, str)
 
 
+class DestinazioneTest(unittest.TestCase):
+    """Il CSS della pagina deve finire accanto all'HTML che lo carica,
+    non rispetto alla cartella da cui si lancia il comando."""
+
+    def test_il_css_di_pagina_segue_lhtml_di_destinazione(self):
+        import subprocess
+        import sys
+        import tempfile
+        from pathlib import Path as P
+
+        tmp = P(tempfile.mkdtemp())
+        sorgente = tmp / "sorgente.html"
+        sorgente.write_text(
+            '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">'
+            '<title>T</title><link href="assets/css/custom.css" rel="stylesheet">'
+            '<style>h1{color:red}</style></head><body><p>x</p></body></html>',
+            encoding="utf-8")
+        mappa = tmp / "mappa.json"
+        mappa.write_text("{}", encoding="utf-8")
+        destinazione = tmp / "uscita" / "index.html"
+        destinazione.parent.mkdir(parents=True)
+
+        r = subprocess.run(
+            [sys.executable, str(P(__file__).resolve().parent / "clean_page.py"),
+             str(sorgente), str(destinazione), "--slug", "index",
+             "--mappa", str(mappa), "--bundle"],
+            capture_output=True, text=True, cwd=str(tmp))
+        self.assertEqual(r.returncode, 0, r.stderr)
+
+        atteso = destinazione.parent / "assets/css/pages/index.css"
+        self.assertTrue(atteso.exists(),
+                        f"il CSS di pagina non e' accanto all'HTML: {atteso}")
+        self.assertIn("h1{color:red}", atteso.read_text(encoding="utf-8"))
+        self.assertFalse((tmp / "assets/css/pages/index.css").exists(),
+                         "il CSS e' finito rispetto alla cartella corrente")
+
+
 if __name__ == "__main__":
     unittest.main()
