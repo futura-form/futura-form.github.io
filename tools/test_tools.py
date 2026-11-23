@@ -45,6 +45,21 @@ class CompareTest(unittest.TestCase):
         self.assertEqual(r.returncode, 1, r.stdout)
         self.assertIn("1 pixel", r.stdout)
 
+    def test_a_one_step_difference_on_a_single_channel_is_caught(self):
+        """difference().convert("L") applica i pesi di luminanza prima di
+        contare: +1 sul rosso e +4 sul blu sparivano, e il confronto
+        dichiarava identita' perfetta."""
+        for canale, delta in (("rosso", (1, 0, 0)), ("verde", (0, 1, 0)), ("blu", (0, 0, 4))):
+            with self.subTest(canale=canale):
+                base = (10, 20, 30)
+                a = self.png(f"a-{canale}.png", (40, 60), base)
+                b = self.png(f"b-{canale}.png", (40, 60),
+                             tuple(v + d for v, d in zip(base, delta)))
+                r = run_compare(a, b)
+                self.assertEqual(r.returncode, 1,
+                                 f"differenza di {delta} non rilevata: {r.stdout}")
+                self.assertIn("2400 pixel", r.stdout)
+
     def test_different_heights_are_reported_not_cropped(self):
         a = self.png("a.png", (40, 60), (10, 20, 30))
         b = self.png("b.png", (40, 90), (10, 20, 30))

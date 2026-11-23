@@ -47,13 +47,25 @@ class CssTest(unittest.TestCase):
                     estranei.append(f"{p.name} -> {href}")
         self.assertEqual(estranei, [], f"fogli estranei: {estranei}")
 
-    def test_nessun_riferimento_a_file_css_inesistente(self):
+    def test_ogni_riferimento_ad_un_asset_combacia_lettera_per_lettera(self):
+        """Non basta Path.exists(): su macOS non distingue le maiuscole,
+        mentre GitHub Pages si'. Un src="assets/img/Logo.png" per un file
+        che si chiama logo.png passerebbe ogni prova in locale e darebbe
+        404 solo una volta pubblicato. E vanno guardati tutti i tipi di
+        riferimento, non i soli <link>: src, srcset e url() dei CSS."""
+        reali = {str(f.relative_to(ROOT)) for f in (ROOT / "assets").rglob("*") if f.is_file()}
         rotti = []
-        for p in ROOT.glob("*.html"):
-            for href in re.findall(r'<link[^>]+href="(assets/[^"?]+)', p.read_text(encoding="utf-8")):
-                if not (ROOT / href).exists():
-                    rotti.append(f"{p.name} -> {href}")
-        self.assertEqual(rotti, [], f"link a file mancanti: {rotti}")
+        for p in list(ROOT.glob("*.html")) + list((ROOT / "assets/css").rglob("*.css")):
+            testo = p.read_text(encoding="utf-8", errors="replace")
+            riferimenti = re.findall(r'(?:href|src)="(assets/[^"?#]+)', testo)
+            for valore in re.findall(r'srcset="([^"]+)"', testo):
+                riferimenti += [c.strip().split(" ")[0] for c in valore.split(",") if "assets/" in c]
+            riferimenti += [u for u in re.findall(r'url\(\s*["\']?([^)"\']+)', testo)
+                            if u.startswith("assets/")]
+            for r in set(riferimenti):
+                if r not in reali:
+                    rotti.append(f"{p.name} -> {r}")
+        self.assertEqual(rotti, [], f"riferimenti che non combaciano: {rotti}")
 
 
 class PercorsiTest(unittest.TestCase):

@@ -47,6 +47,7 @@ JS_ESCLUSI = {
     "modal.min.js", "offcanvas.min.js", "popover.min.js",
     "scrollspy.min.js", "tab.min.js", "toast.min.js",
     "jquery.magnific-popup.min.js", "featherlight.min.js",       # lightbox rimossa
+    "script.min.js",                          # libreria RSFormPro: il form non c'e' piu'
 }
 CSS_RINOMINATI = {"bootstrap(1).min.css": "bootstrap-2.min.css"}
 
@@ -183,12 +184,18 @@ def pulisci(html, mappa, slug, bundle=False):
     for t in soup.select("#wm-ipp-base, #wm-ipp-print, #wm-ipp"):
         t.decompose()
 
+    # il blocco di configurazione Joomla lo leggeva core.min.js, rimosso
+    for s in soup.select("script.joomla-script-options"):
+        s.decompose()
+
     for s in soup.find_all("script"):
         src = s.get("src", "")
         testo = s.string or ""
         if "archive.org" in src or (not src and SCRIPT_WAYBACK.search(testo)):
             s.decompose()
-        elif not src and ("_iub" in testo or "Joomla." in testo):
+        elif not src and ("_iub" in testo or "Joomla." in testo
+                          or "RSFormPro" in testo
+                          or "ajaxExtraValidationScript" in testo):
             s.decompose()
 
     # Senza il suo script il pulsante delle preferenze cookie non fa nulla.

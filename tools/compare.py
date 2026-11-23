@@ -29,17 +29,25 @@ def main(argv=None):
             print(f"  la larghezza cambia: {a.size[0]} contro {b.size[0]} pixel")
         return 1
 
-    diff = ImageChops.difference(a, b).convert("L")
-    changed = sum(1 for px in diff.getdata() if px)
+    # Si conta sul diff RGB, non sulla sua conversione in scala di grigi:
+    # convert("L") applica i pesi di luminanza (0.299/0.587/0.114) prima
+    # di contare, e una differenza di un passo su un solo canale — un
+    # #FFFFFE al posto di #FFFFFF — si azzera nell'arrotondamento.
+    diff = ImageChops.difference(a, b)
+    changed = sum(1 for px in diff.getdata() if px != (0, 0, 0))
     total = a.size[0] * a.size[1]
     pct = 100.0 * changed / total
 
     if args.mask:
-        diff.point(lambda px: 255 if px else 0).save(args.mask)
+        # massimo dei tre canali, per lo stesso motivo: una differenza su
+        # un solo canale non deve sparire nella scala di grigi
+        r, g, bl = diff.split()
+        massimo = ImageChops.lighter(ImageChops.lighter(r, g), bl)
+        massimo.point(lambda px: 255 if px else 0).save(args.mask)
 
     print(f"{pct:.4f}% diversi — {changed} pixel su {total}")
     if changed:
-        box = diff.getbbox()
+        box = diff.getbbox()  # getbbox su RGB vede tutti e tre i canali
         print(f"  regione interessata: {box}")
         return 1
     return 0

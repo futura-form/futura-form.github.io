@@ -17,8 +17,9 @@ senza alcun passo di build — si clona e si pubblica.
 
 ## In che cosa differisce dall'originale
 
-Sono le uniche differenze volute. Tutto il resto è identico al pixel
-rispetto all'originale archiviato, su desktop.
+Sono le uniche differenze volute. A riposo, tutto il resto è identico al
+pixel rispetto all'originale archiviato su desktop, e `tools/verify.py`
+lo verifica a ogni esecuzione della suite.
 
 1. **Toolbar dell'Internet Archive**: rimossa, con tutti i suoi script.
 2. **Pagine mai salvate**: blog, cookie policy, codice etico, le sei
@@ -26,7 +27,10 @@ rispetto all'originale archiviato, su desktop.
    salvataggi. Le voci che ci puntavano sono state tolte da menu e
    footer; nella sezione blog della home restano i titoli come testo.
 3. **Lightbox del portfolio**: rimossa, perché le immagini ad alta
-   risoluzione non sono nei salvataggi. Resta l'effetto hover.
+   risoluzione non sono nei salvataggi. Resta l'effetto hover, con una
+   conseguenza: il titolo delle card va a capo più tardi. L'overlay era
+   una tabella di due celle e quella del pulsante ZOOM non c'è più,
+   quindi il titolo ha più larghezza. Lo stato a riposo non cambia.
 4. **Form di contatto**: sostituito in tutte e cinque le pagine da una
    card con i recapiti e un link `mailto:`. Non c'è più un backend a cui
    inviare.
@@ -63,7 +67,7 @@ index.html, chi-siamo.html, …   le cinque pagine
 assets/css/site.css             i dieci fogli del tema concatenati
 assets/css/pages/<pagina>.css   i blocchi <style> estratti, uno per pagina
 assets/css/card-contatti.css    la card che sostituisce il form
-assets/js/                      i dieci script rimasti su trentaquattro
+assets/js/                      i nove script rimasti su trentaquattro
 assets/img/                     le immagini, deduplicate
 ```
 
@@ -81,20 +85,36 @@ Il sito non si modifica a mano: si rigenera dai salvataggi, che stanno in
 ```bash
 python3 tools/build.py                              # ricostruisce tutto
 python3 -m unittest discover -s tools -p 'test_*.py' # la suite completa
+python3 tools/verify.py                             # solo il confronto a pixel
 ```
 
-La suite controlla la trasformazione, le proprietà che il sito deve
-mantenere (percorsi relativi, nessun link morto, fallback dei font) e i
-comportamenti che uno screenshot non coglie: menu mobile, carosello,
-griglia del portfolio, card contatti.
+`build.py` rifà tutto: copia e rinomina le immagini, concatena il bundle
+CSS, rigenera le cinque pagine e i CSS di pagina. Eseguirlo due volte di
+fila non cambia un byte.
 
-Per confrontare una pagina con l'originale archiviato:
+La suite controlla la trasformazione, le proprietà che il sito deve
+mantenere (percorsi relativi, riferimenti agli asset che combaciano
+lettera per lettera, nessun link morto, fallback dei font), i
+comportamenti che uno screenshot non coglie (menu mobile, carosello,
+griglia del portfolio, card contatti) e, tramite `verify.py`, il
+confronto a pixel con l'originale.
+
+`verify.py` è la rete di sicurezza: per ogni pagina dichiara i riquadri
+in cui le differenze sono ammesse, e con il loro perché, e pretende
+identità esatta ovunque altrove. Una modifica a mano a un HTML o a un CSS
+lo fa fallire indicando il rettangolo.
+
+Per confrontare una singola pagina a mano:
 
 ```bash
 python3 tools/shoot.py "Sito-FuturaForm/Home-Page.html" riferimento.png --width 1440 --fonts
 python3 tools/shoot.py index.html nuova.png --width 1440
 python3 tools/compare.py riferimento.png nuova.png
 ```
+
+La home è 44 px più bassa dell'originale, per via del pulsante rimosso,
+quindi `compare.py` da solo non può confrontarla: se ne occupa
+`verify.py`, che sotto quella cucitura allinea le due immagini dal basso.
 
 L'opzione `--fonts` serve solo sugli originali: i loro `@font-face`
 puntano i woff2 su archive.org e non risolvono, quindi senza quella

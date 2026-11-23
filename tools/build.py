@@ -34,6 +34,10 @@ def main():
         return 1
 
     subprocess.run(
+        [sys.executable, str(ROOT / "tools/sync_images.py")],
+        check=True)
+
+    subprocess.run(
         [sys.executable, str(ROOT / "tools/bundle_css.py"),
          "--cartella", str(FOGLI_SORGENTE), "--out", str(ROOT / "assets/css/site.css"),
          *FOGLI],

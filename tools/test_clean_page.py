@@ -328,6 +328,41 @@ class LinkMortiTest(unittest.TestCase):
         self.assertIn("current-item", out)
 
 
+class RsformTest(unittest.TestCase):
+    def test_toglie_gli_script_inline_di_rsformpro(self):
+        """Il form non esiste piu': la sua validazione AJAX e' peso morto,
+        e lascia nella pagina un percorso assoluto verso un componente
+        Joomla che non c'e'."""
+        out = pulisci(doc(body='<script>RSFormPro.Ajax.URL = "/it/component/rsform/'
+                               '?task=ajaxValidate&Itemid=561";</script>'
+                               '<script>ajaxExtraValidationScript[5] = function(){};</script>'
+                               '<p>vero</p>'),
+                      mappa=MAPPA, slug="contatti")
+        self.assertNotIn("RSFormPro", out)
+        self.assertNotIn("ajaxExtraValidationScript", out)
+        self.assertNotIn("component/rsform", out)
+        self.assertIn("vero", out)
+
+    def test_non_resta_nessun_percorso_assoluto_negli_script_inline(self):
+        out = pulisci(doc(body='<script>RSFormPro.Ajax.URL = "\\/it\\/component\\/rsform\\/";'
+                               '</script>'), mappa=MAPPA, slug="contatti")
+        self.assertNotIn("component", out)
+
+
+class ConfigJoomlaTest(unittest.TestCase):
+    def test_toglie_il_blocco_di_configurazione_joomla(self):
+        """Lo leggeva core.min.js, che non c'e' piu'. Dentro ci sono
+        percorsi assoluti verso componenti che non esistono."""
+        out = pulisci(doc(body='<script type="application/json" '
+                               'class="joomla-script-options new">'
+                               '{"system.keepalive":{"uri":"\\/it\\/component\\/ajax\\/"}}'
+                               '</script><p>vero</p>'),
+                      mappa=MAPPA, slug="index")
+        self.assertNotIn("joomla-script-options", out)
+        self.assertNotIn("component", out)
+        self.assertIn("vero", out)
+
+
 class BundleTest(unittest.TestCase):
     """Con --bundle le pagine caricano un solo foglio comune piu' il
     proprio, e i blocchi <style> inline finiscono in quest'ultimo."""
