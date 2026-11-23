@@ -169,6 +169,27 @@ class ShootTest(unittest.TestCase):
                              list(ib.convert("RGB").getdata()),
                              "due catture della stessa pagina sono diverse")
 
+    def test_a_layout_that_reacts_to_resize_is_captured_once_settled(self):
+        """La griglia del portfolio si ricalcola al resize con una
+        transizione di 250ms, e lo screenshot full page ridimensiona il
+        viewport: catturata subito dopo, la si prende a meta' corsa."""
+        page = self.page(
+            "<div id='griglia' style='background:#333;transition:height 250ms ease-out;"
+            "height:400px'></div><div style='height:1000px;background:#ddd'></div>"
+            "<script>addEventListener('resize', function once() {"
+            "  removeEventListener('resize', once);"
+            "  document.getElementById('griglia').style.height = '200px';"
+            "}, {once: true});</script>"
+        )
+        out = self.tmp / "settled.png"
+        self.shoot(page, out, 400)
+        with Image.open(out) as im:
+            px = im.convert("RGB").load()
+            # a transizione finita la griglia scura e' alta 200px:
+            # a 260px deve esserci gia' il grigio chiaro di sotto
+            self.assertEqual(px[200, 260], (221, 221, 221),
+                             "la griglia e' stata catturata prima che la transizione finisse")
+
     def test_cookie_banner_is_suppressed(self):
         page = self.page(
             "<div id='iubenda-cs-banner' style='height:200px;background:#00ff00'></div>"

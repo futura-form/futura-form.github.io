@@ -106,7 +106,22 @@ def main(argv=None):
             page.hover(args.hover)
             page.wait_for_timeout(600)
 
-        page.screenshot(path=args.out, full_page=True)
+        # Lo screenshot full page ridimensiona il viewport all'altezza del
+        # documento, e quel resize fa ricalcolare la griglia del portfolio
+        # con una transizione di 250ms: catturata subito dopo, la si
+        # prenderebbe a meta' corsa, diversa a ogni esecuzione. Si
+        # ridimensiona prima, si aspetta che tutto si assesti, e si cattura
+        # il viewport invece della pagina intera.
+        altezza = page.evaluate("() => document.documentElement.scrollHeight")
+        page.set_viewport_size({"width": args.width, "height": min(altezza, 30000)})
+        page.wait_for_timeout(1200)
+        assestata = page.evaluate("() => document.documentElement.scrollHeight")
+        if assestata != altezza:
+            page.set_viewport_size({"width": args.width, "height": min(assestata, 30000)})
+            page.wait_for_timeout(800)
+        page.evaluate("window.scrollTo(0, 0)")
+        page.wait_for_timeout(200)
+        page.screenshot(path=args.out)
         browser.close()
 
     for e in errori:

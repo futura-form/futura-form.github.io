@@ -35,11 +35,15 @@ class CssTest(unittest.TestCase):
                     senza.append(f"{p.name}: {m.group(0)[:60]}")
         self.assertEqual(senza, [], f"Poppins senza fallback: {senza[:5]}")
 
-    def test_le_pagine_caricano_solo_il_bundle_e_il_css_di_pagina(self):
+    AMMESSI = {"assets/css/site.css", "assets/css/card-contatti.css"}
+
+    def test_le_pagine_caricano_solo_i_fogli_previsti(self):
+        """Il bundle, il CSS della pagina e quello della card. Qualunque
+        altro foglio e' un residuo del vecchio Joomla."""
         estranei = []
         for p in ROOT.glob("*.html"):
             for href in re.findall(r'<link[^>]+href="(assets/css/[^"?]+)', p.read_text(encoding="utf-8")):
-                if href != "assets/css/site.css" and not href.startswith("assets/css/pages/"):
+                if href not in self.AMMESSI and not href.startswith("assets/css/pages/"):
                     estranei.append(f"{p.name} -> {href}")
         self.assertEqual(estranei, [], f"fogli estranei: {estranei}")
 

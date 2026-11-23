@@ -88,6 +88,50 @@ class MenuMobileTest(unittest.TestCase):
             self.assertGreater(box["width"], 5, "l'icona e' larga zero")
 
 
+class CardContattiTest(unittest.TestCase):
+    """La card ha un'altezza imposta per tenere la sezione dell'altezza
+    che aveva col form: su schermi stretti il testo non deve uscirne."""
+
+    def test_a_390_il_contenuto_sta_dentro_la_card(self):
+        with Pagina("contatti.html", width=390) as p:
+            fuori = p.evaluate("""() => {
+                const c = document.querySelector('.futuraform-card');
+                return [...c.querySelectorAll('*')]
+                    .filter(e => e.scrollWidth > e.clientWidth + 1)
+                    .map(e => e.className.toString().slice(0, 40));
+            }""")
+            self.assertEqual(fuori, [], f"elementi che traboccano: {fuori}")
+
+    def test_a_390_la_pagina_non_scorre_in_orizzontale(self):
+        with Pagina("contatti.html", width=390) as p:
+            self.assertFalse(
+                p.evaluate("() => document.documentElement.scrollWidth > window.innerWidth"),
+                "la pagina scorre in orizzontale")
+
+    def test_il_pulsante_e_cliccabile_su_tutte_le_larghezze(self):
+        for w in (1440, 768, 390):
+            with Pagina("contatti.html", width=w) as p:
+                b = p.locator(".futuraform-card-azione")
+                self.assertTrue(b.is_visible(), f"pulsante non visibile a {w}px")
+                box = b.bounding_box()
+                self.assertGreater(box["width"], 40, f"pulsante largo zero a {w}px")
+
+    def test_il_mailto_punta_allindirizzo_giusto_in_tutte_le_pagine(self):
+        for pagina in ("index.html", "chi-siamo.html", "servizi.html",
+                       "lavori.html", "contatti.html"):
+            with Pagina(pagina) as p:
+                self.assertEqual(
+                    p.locator(".futuraform-card-azione").get_attribute("href"),
+                    "mailto:info@futuraform.it", f"mailto sbagliato in {pagina}")
+
+    def test_non_resta_nessun_form_in_nessuna_pagina(self):
+        for pagina in ("index.html", "chi-siamo.html", "servizi.html",
+                       "lavori.html", "contatti.html"):
+            with Pagina(pagina) as p:
+                self.assertEqual(p.locator("form").count(), 0,
+                                 f"{pagina} ha ancora un form")
+
+
 class CaroselloTest(unittest.TestCase):
     def test_il_carosello_clienti_crea_i_suoi_cloni(self):
         with Pagina("index.html") as p:
