@@ -56,6 +56,47 @@ class CssTest(unittest.TestCase):
         self.assertEqual(rotti, [], f"link a file mancanti: {rotti}")
 
 
+class PercorsiTest(unittest.TestCase):
+    def test_nessun_percorso_assoluto(self):
+        """GitHub Pages serve da https://utente.github.io/<repo>/: un
+        percorso che inizia con / esce dalla sottocartella e da' 404,
+        mentre in locale funziona."""
+        colpevoli = []
+        for p in list(ROOT.glob("*.html")) + list((ROOT / "assets/css").rglob("*.css")):
+            testo = p.read_text(encoding="utf-8", errors="replace")
+            for m in re.finditer(r'(?:href|src)="(/[^/"][^"]*)"', testo):
+                colpevoli.append(f"{p.name}: {m.group(1)[:50]}")
+            for m in re.finditer(r'url\(\s*["\']?(/[^/)"\']+)', testo):
+                colpevoli.append(f"{p.name}: url({m.group(1)[:50]})")
+        self.assertEqual(colpevoli, [], f"percorsi assoluti: {colpevoli}")
+
+    def test_la_sola_rete_automatica_e_google_fonts(self):
+        """Tutto il resto deve stare nel repo. I link a Facebook,
+        LinkedIn e iubenda sono cliccati dall'utente, non caricati."""
+        automatici = set()
+        for p in ROOT.glob("*.html"):
+            testo = p.read_text(encoding="utf-8")
+            for m in re.finditer(r'<(?:link|script|img|iframe)[^>]+(?:href|src)="(https?://[^"]+)"', testo):
+                automatici.add(m.group(1).split("/")[2])
+        self.assertEqual(automatici, {"fonts.googleapis.com"},
+                         f"richieste automatiche verso l'esterno: {automatici}")
+
+    def test_ogni_ancoraggio_esiste_nella_pagina_di_destinazione(self):
+        mancanti = []
+        for p in ROOT.glob("*.html"):
+            testo = p.read_text(encoding="utf-8")
+            for pagina, ancora in re.findall(r'href="([^"#:]*)#([^"]+)"', testo):
+                if ancora in ("", "close", "expand"):
+                    continue
+                dest = ROOT / (pagina or p.name)
+                if not dest.exists():
+                    mancanti.append(f"{p.name} -> {pagina}#{ancora} (pagina assente)")
+                elif f'id="{ancora}"' not in dest.read_text(encoding="utf-8") \
+                        and f'name="{ancora}"' not in dest.read_text(encoding="utf-8"):
+                    mancanti.append(f"{p.name} -> {pagina or p.name}#{ancora}")
+        self.assertEqual(mancanti, [], f"ancoraggi che non esistono: {mancanti}")
+
+
 class LinkTest(unittest.TestCase):
     def test_nessun_riferimento_al_dominio_spento_o_ad_archive(self):
         colpevoli = []
