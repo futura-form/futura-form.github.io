@@ -56,5 +56,25 @@ class CssTest(unittest.TestCase):
         self.assertEqual(rotti, [], f"link a file mancanti: {rotti}")
 
 
+class LinkTest(unittest.TestCase):
+    def test_nessun_riferimento_al_dominio_spento_o_ad_archive(self):
+        colpevoli = []
+        for p in list(ROOT.glob("*.html")) + list((ROOT / "assets/css").rglob("*.css")):
+            testo = p.read_text(encoding="utf-8", errors="replace")
+            for schema in ("futuraform.it/it/", "futuraform.it/en/", "web.archive.org",
+                           "/web/2026"):
+                if schema in testo:
+                    colpevoli.append(f"{p.name}: {schema}")
+        self.assertEqual(colpevoli, [], f"riferimenti a destinazioni morte: {colpevoli}")
+
+    def test_ogni_link_interno_punta_a_una_pagina_che_esiste(self):
+        rotti = []
+        for p in ROOT.glob("*.html"):
+            for href in re.findall(r'href="([^"#:]+\.html)(?:#[^"]*)?"', p.read_text(encoding="utf-8")):
+                if not (ROOT / href).exists():
+                    rotti.append(f"{p.name} -> {href}")
+        self.assertEqual(rotti, [], f"link a pagine inesistenti: {rotti}")
+
+
 if __name__ == "__main__":
     unittest.main()

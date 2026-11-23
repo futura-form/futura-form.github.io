@@ -1,4 +1,5 @@
 """Test della trasformazione da salvataggio Wayback a pagina pulita."""
+import re
 import unittest
 
 from clean_page import pulisci
@@ -239,6 +240,92 @@ class CardContattiTest(unittest.TestCase):
 
     def test_la_card_ha_la_classe_che_ne_fissa_laltezza(self):
         self.assertIn("futuraform-card", self.pulito())
+
+
+class LinkMortiTest(unittest.TestCase):
+    """Le pagine mai salvate non esistono: blog, cookie policy, codice
+    etico, le schede portfolio e tutta la versione inglese."""
+
+    def pulito(self, body):
+        return pulisci(doc(body=body), mappa=MAPPA, slug="index")
+
+    def test_toglie_la_voce_blog_dal_menu(self):
+        out = self.pulito('<ul class="sp-megamenu-parent">'
+                          '<li class="sp-menu-item"><a href="https://www.futuraform.it/it/blog">'
+                          'Blog</a></li>'
+                          '<li class="sp-menu-item"><a href="https://www.futuraform.it/it/contatti">'
+                          'CONTATTI</a></li></ul>')
+        self.assertNotIn("Blog", out)
+        self.assertIn("CONTATTI", out)
+        self.assertEqual(len(re.findall(r"<li[ >]", out)), 1,
+                         "doveva restare una sola voce")
+
+    def test_toglie_cookie_policy_e_codice_etico_dal_footer(self):
+        out = self.pulito('<ul class="menu">'
+                          '<li class="item-565"><a href="https://www.futuraform.it/it/cookie-policy">'
+                          'Cookie Policy</a></li>'
+                          '<li class="item-567"><a href="https://www.futuraform.it/it/'
+                          'codice-etico-futuraform">Codice etico</a></li>'
+                          '<li class="item-1"><a href="https://www.iubenda.com/privacy-policy/1">'
+                          'Privacy policy</a></li></ul>')
+        self.assertNotIn("Cookie Policy", out)
+        self.assertNotIn("Codice etico", out)
+        self.assertIn("Privacy policy", out)
+
+    def test_toglie_la_voce_en_lasciando_lindicatore_it(self):
+        """Togliere l'intero modulo libererebbe la col-1 dell'header e
+        farebbe riflusso sul desktop."""
+        out = self.pulito('<div class="mod-languages"><ul class="lang-block dropdown-menu">'
+                          '<li class="lang-active"><a href="https://www.futuraform.it/it/">IT</a></li>'
+                          '<li><a href="https://www.futuraform.it/en/">EN</a></li></ul></div>')
+        self.assertNotIn(">EN<", out)
+        self.assertIn(">IT<", out)
+        self.assertIn("mod-languages", out)
+
+    def test_i_titoli_degli_articoli_restano_come_testo(self):
+        out = self.pulito('<h3><a href="https://www.futuraform.it/it/blog/influencer-marketing">'
+                          'Influencer Marketing</a></h3>')
+        self.assertIn("Influencer Marketing", out)
+        self.assertNotIn("<a ", out)
+
+    def test_toglie_il_pulsante_leggi_di_piu(self):
+        out = self.pulito('<div class="sppb-text-left"><a class="sppb-btn section-button" '
+                          'href="https://futuraform.it/it/blog">Leggi di pi\u00f9</a></div>')
+        self.assertNotIn("Leggi di", out)
+
+    def test_non_resta_nessun_link_al_dominio_morto(self):
+        out = self.pulito('<a href="https://www.futuraform.it/it/blog">x</a>'
+                          '<a href="https://www.futuraform.it/en/">y</a>'
+                          '<a href="https://www.futuraform.it/it/cookie-policy">z</a>')
+        self.assertNotIn("futuraform.it/it/", out)
+        self.assertNotIn("futuraform.it/en/", out)
+
+    def test_toglie_og_url_che_punta_al_dominio_morto(self):
+        """Una og:url verso un sito spento manda le condivisioni nel
+        vuoto: meglio nessuna che una sbagliata."""
+        out = pulisci(doc(head='<meta property="og:url" content="https://www.futuraform.it/it/">'
+                               '<meta property="og:title" content="Futuraform">'),
+                      mappa=MAPPA, slug="index")
+        self.assertNotIn("og:url", out)
+        self.assertIn("og:title", out)
+
+    def test_toglie_il_meta_generator_con_il_segnaposto_non_espanso(self):
+        out = pulisci(doc(head='<meta name="generator" content="HELIX_ULTIMATE_GENERATOR_TEXT">'),
+                      mappa=MAPPA, slug="index")
+        self.assertNotIn("HELIX_ULTIMATE", out)
+
+    def test_non_tocca_i_link_esterni(self):
+        out = self.pulito('<a href="https://www.linkedin.com/company/futuraform">LinkedIn</a>'
+                          '<a href="https://www.facebook.com/futuraform">Facebook</a>')
+        self.assertIn("linkedin.com", out)
+        self.assertIn("facebook.com", out)
+
+    def test_non_tocca_la_voce_home_vuota(self):
+        """Nell'originale e' vuota e alla home si arriva dal logo:
+        riempirla o toglierla sarebbe una differenza visibile."""
+        out = self.pulito('<ul class="sp-megamenu-parent">'
+                          '<li class="sp-menu-item current-item active"></li></ul>')
+        self.assertIn("current-item", out)
 
 
 class BundleTest(unittest.TestCase):

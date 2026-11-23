@@ -146,6 +146,32 @@ def _riscrivi_link(href, slug):
     return destinazione
 
 
+DOMINIO_MORTO = re.compile(r"^https?://(?:www\.)?futuraform\.it/", re.I)
+
+
+def _togli_link_morti(soup):
+    """Porta via i link alle pagine mai salvate: blog, cookie policy,
+    codice etico, schede portfolio, versione inglese. Cosa si toglie
+    dipende da che ruolo ha il link.
+
+    - voce di un menu: va via tutta la voce, altrimenti resta un
+      elemento di lista vuoto che occupa spazio;
+    - titolo dentro un'intestazione: resta il testo, che e' contenuto;
+    - tutto il resto (pulsanti): va via il link.
+    """
+    for a in list(soup.find_all("a", href=True)):
+        if a.attrs is None or not DOMINIO_MORTO.match(a["href"]):
+            continue
+        voce = a.find_parent("li")
+        if voce is not None and voce.find_parent(["ul", "ol"]) is not None:
+            voce.decompose()
+            continue
+        if a.find_parent(["h1", "h2", "h3", "h4", "h5", "h6"]) is not None:
+            a.unwrap()
+            continue
+        a.decompose()
+
+
 def pulisci(html, mappa, slug, bundle=False):
     html = BLOCCO_TOOLBAR.sub("", html)
     soup = BeautifulSoup(html, "html.parser")
@@ -243,8 +269,20 @@ def pulisci(html, mappa, slug, bundle=False):
 
     for a in soup.find_all("a", href=True):
         a["href"] = _riscrivi_link(a["href"], slug)
+
+    _togli_link_morti(soup)
     for f in soup.find_all("form", action=True):
         f["action"] = PREFISSO_WB.sub("", f["action"])
+
+    # og:url puntava al dominio spento: una condivisione finirebbe nel
+    # vuoto. Il meta generator porta un segnaposto mai espanso.
+    for m in list(soup.find_all("meta")):
+        if m.attrs is None:
+            continue
+        if m.get("property") == "og:url":
+            m.decompose()
+        elif m.get("name") == "generator":
+            m.decompose()
 
     head = soup.find("head")
     if head:
